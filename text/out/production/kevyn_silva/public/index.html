@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Mansão da Névoa</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f0f0f0;
+        }
+        .container {
+            margin-top: 20px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .comando-button {
+            background-color: #007BFF;
+            color: white;
+        }
+        .comando-button:hover {
+            background-color: #0056b3;
+        }
+        #voltarButton {
+            background-color: #dc3545;
+        }
+        #voltarButton:hover {
+            background-color: #c82333;
+        }
+        .typing {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="text-center">A Mansão da Névoa</h1>
+
+    <div id="menu" class="text-center">
+        <button class="btn comando-button btn-block mb-2" onclick="iniciarJogo()">Jogar</button>
+        <button class="btn comando-button btn-block mb-2" onclick="mostrarSeção('carregar')">Carregar Jogo</button>
+        <button class="btn comando-button btn-block mb-2" onclick="mostrarSeção('creditos')">Créditos</button>
+        <button class="btn comando-button btn-block" onclick="mostrarSeção('comandos')">Comandos</button>
+    </div>
+
+    <div id="jogar" class="section">
+        <div id="descricao" class="mb-3 typing">Carregando...</div>
+        <input type="text" id="comando" class="form-control mb-2" placeholder="Digite seu comando...">
+        <button id="comandoButton" class="btn comando-button btn-block mb-2">Enviar Comando</button>
+        <button id="avancarButton" class="btn btn-success btn-block mb-2" style="display: none;">Avançar</button>
+        <button id="voltarButton" class="btn btn-danger btn-block" style="display: none;">Voltar</button>
+    </div>
+
+    <div id="carregar" class="section">
+        <p>Aqui você pode carregar um jogo salvo.</p>
+    </div>
+
+    <div id="creditos" class="section">
+        <p>Créditos: Jogo desenvolvido por [Kevyn Silva].</p>
+    </div>
+
+    <div id="comandos" class="section">
+        <h2>Comandos</h2>
+        <p><strong>USAR:</strong> escada, etc.</p>
+        <p><strong>PEGAR:</strong> vela, diário, etc.</p>
+    </div>
+</div>
+
+<script>
+    let idCenaAtual = 1;
+    let proximaCena = -1;
+    let cenaAnterior = -1;
+    let comandoCorreto = false;
+
+    window.onload = () => mostrarSeção('menu');
+
+    function iniciarJogo() {
+        document.getElementById('menu').style.display = 'none';
+        mostrarSeção('jogar');
+        carregarCena(idCenaAtual);
+    }
+
+    document.getElementById('avancarButton').onclick = () => {
+        if (idCenaAtual === 1 || comandoCorreto) {
+            avancarParaCena(proximaCena !== -1 ? proximaCena : idCenaAtual + 1);
+        }
+    };
+
+    document.getElementById('voltarButton').onclick = () => {
+        if (cenaAnterior !== -1) {
+            avancarParaCena(cenaAnterior);
+        }
+    };
+
+    document.getElementById('comandoButton').onclick = () => {
+        enviarComando(document.getElementById('comando').value, idCenaAtual);
+    };
+
+    function digitarTexto(texto, elemento, velocidade = 10) {
+        let i = 0;
+        elemento.innerHTML = '';
+        const intervalo = setInterval(() => {
+            elemento.innerHTML += texto.charAt(i);
+            i++;
+            if (i > texto.length) {
+                clearInterval(intervalo);
+            }
+        }, velocidade);
+    }
+
+    function enviarComando(comando, idCenaAtual) {
+        fetch('/comando', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: `comando=${comando}&cenaAtual=${idCenaAtual}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            digitarTexto(data.descricao, document.getElementById('descricao'));
+            comandoCorreto = data.correto;
+            proximaCena = data.proximaCena;
+            document.getElementById('avancarButton').style.display = comandoCorreto ? 'block' : 'none';
+            document.getElementById('voltarButton').style.display = comandoCorreto ? 'none' : 'block';
+        });
+    }
+
+    function avancarParaCena(idCenaDestino) {
+        fetch(`/cena/${idCenaDestino}`)
+        .then(response => response.json())
+        .then(cena => {
+            digitarTexto(cena.descricao, document.getElementById('descricao'));
+            cenaAnterior = idCenaAtual;
+            idCenaAtual = idCenaDestino;
+            document.getElementById('comando').value = '';
+            proximaCena = -1;
+            comandoCorreto = false;
+            document.getElementById('comando').style.display = idCenaAtual > 1 ? 'block' : 'none';
+            document.getElementById('comandoButton').style.display = idCenaAtual > 1 ? 'block' : 'none';
+            document.getElementById('avancarButton').style.display = 'block';
+            document.getElementById('voltarButton').style.display = 'none';
+        });
+    }
+
+    function carregarCena(idCenaInicial) {
+        avancarParaCena(idCenaInicial);
+    }
+
+    function mostrarSeção(seção) {
+        document.querySelectorAll('.section').forEach(sec => sec.style.display = 'none');
+        document.getElementById(seção).style.display = 'block';
+    }
+</script>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
