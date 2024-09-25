@@ -10,15 +10,18 @@ public class Mysql {
     public static Connection getConnection() {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            connection = DriverManager.getConnection(
-                    "jdbc:mysql://192.168.1.188:3306/kevyn_silva",
-                    "kevyn_silva",
-                    "12345"
-            );
+
+            // Obtendo as variáveis de ambiente
+            String dbUrl = System.getenv("DB_URL");
+            String dbUser = System.getenv("DB_USER");
+            String dbPassword = System.getenv("DB_PASSWORD");
+
+            // Estabelecendo a conexão
+            connection = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
             return connection;
         } catch (SQLException e) {
             System.out.println(e.getMessage());
-            System.out.println("Erro ao tentar connectar com o banco.");
+            System.out.println("Erro ao tentar conectar com o banco.");
         } catch (ClassNotFoundException e) {
             System.out.println("Erro ao tentar importar o driver mysql");
         }
